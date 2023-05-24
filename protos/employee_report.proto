@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package employee_report;
+
+// Message definitions
+message Report {
+  int32 id = 1;
+  int32 user_id = 2;
+  int32 project_id = 3;
+  string creation_date = 4;
+  string report_date = 5;
+  int32 time_span_minutes = 6;
+  string task_name = 7;
+  string task_description = 8;
+}
+
+message ReportsByUser {
+  int32 user_id = 1;
+  repeated Report reports = 2;
+}
+
+message ReportsByProject {
+  int32 project_id = 1;
+  repeated Report reports = 2;
+}
+
+// Service definition
+service EmployeeReportService {
+  rpc CreateReport(Report) returns (Report) {}
+  rpc GetReportById(GetReportByIdRequest) returns (Report) {}
+  rpc GetReportsByUser(GetReportsByUserRequest) returns (ReportsByUser) {}
+  rpc GetReportsByProject(GetReportsByProjectRequest) returns (ReportsByProject) {}
+  rpc EditReport(EditReportRequest) returns (Report) {}
+  rpc DeleteReportById(DeleteReportByIdRequest) returns (google.protobuf.Empty) {}
+}
+
+// Request/Response message definitions
+message GetReportByIdRequest {
+  int32 id = 1;
+}
+
+message GetReportsByUserRequest {
+  int32 user_id = 1;
+}
+
+message GetReportsByProjectRequest {
+  int32 project_id = 1;
+}
+
+message EditReportRequest {
+  int32 id = 1;
+  optional int32 project_id = 2;
+  optional string creation_date = 3;
+  optional string report_date = 4;
+  optional int32 time_span_minutes = 5;
+  optional string task_name = 6;
+  optional string task_description = 7;
+}
+
+message DeleteReportByIdRequest {
+  int32 id = 1;
+}
