@@ -59,14 +59,14 @@ class Report(_message.Message):
     TIME_SPAN_MINUTES_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     creation_date: str
-    id: int
+    id: str
     project_id: int
     report_date: str
     task_description: str
     task_name: str
     time_span_minutes: int
     user_id: int
-    def __init__(self, id: _Optional[int] = ..., user_id: _Optional[int] = ..., project_id: _Optional[int] = ..., creation_date: _Optional[str] = ..., report_date: _Optional[str] = ..., time_span_minutes: _Optional[int] = ..., task_name: _Optional[str] = ..., task_description: _Optional[str] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., user_id: _Optional[int] = ..., project_id: _Optional[int] = ..., creation_date: _Optional[str] = ..., report_date: _Optional[str] = ..., time_span_minutes: _Optional[int] = ..., task_name: _Optional[str] = ..., task_description: _Optional[str] = ...) -> None: ...
 
 class ReportsByProject(_message.Message):
     __slots__ = ["project_id", "reports"]

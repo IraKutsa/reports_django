@@ -6,7 +6,7 @@ package employee_report;
 
 // Message definitions
 message Report {
-  int32 id = 1;
+  string id = 1;
   int32 user_id = 2;
   int32 project_id = 3;
   string creation_date = 4;

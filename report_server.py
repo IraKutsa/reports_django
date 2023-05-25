@@ -4,6 +4,7 @@ import grpc
 import logging
 
 from google.protobuf.empty_pb2 import Empty
+from google.protobuf.json_format import MessageToDict, ParseDict
 from pymongo import MongoClient
 
 import employee_report_pb2_grpc, employee_report_pb2
@@ -21,12 +22,12 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
     def CreateReport(self, request, context):
         logging.info('call CreateReport')
         logging.info(request)
-        report = request
+        report = MessageToDict(request)
         # report.id = len(self.reports) + 1
         # self.reports.append(report)
         # self._add_report_to_collections(report)
-        report.id = self.db.reports.insert_one(report).inserted_id
-        return report
+        report["id"] = str(self.db.reports.insert_one(report).inserted_id)
+        return ParseDict(report, employee_report_pb2.Report(), ignore_unknown_fields=True)
 
     def GetReportById(self, request, context):
         report = self.db.reports.find_one({"_id": request.id})
