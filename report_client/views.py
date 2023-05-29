@@ -38,11 +38,11 @@ class GetEditReportsView(APIView):
 
     def put(self, request, id):
         try:
-            report = ParseDict(request.data, employee_report_pb2.EditReportRequest())
+            report = ParseDict(request.data, employee_report_pb2.EditReportRequest(), ignore_unknown_fields=True)
             report.id = id
             response = stub.EditReport(request=report)
             json = MessageToJson(response, preserving_proto_field_name=True)
-            return Response(json, status=status.HTTP_201_CREATED)
+            return Response(json, status=status.HTTP_200_OK)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise Http404

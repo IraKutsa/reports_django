@@ -43,7 +43,7 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
     def GetReportsByUser(self, request, context):
         logging.info('call GetReportsByUser')
         logging.info(request)
-        reports = self.db.reports.find({"userId": request.user_id})
+        reports = self.db.reports.find({"user_id": request.user_id})
         by_user = employee_report_pb2.ReportsByUser(user_id=request.user_id)
         if reports:
             by_user.reports.extend([convert(report) for report in reports])
@@ -52,7 +52,7 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
     def GetReportsByProject(self, request, context):
         logging.info('call GetReportsByProject')
         logging.info(request)
-        reports = self.db.reports.find({"projectId": request.project_id})
+        reports = self.db.reports.find({"project_id": request.project_id})
         by_project = employee_report_pb2.ReportsByProject(project_id=request.project_id)
         if reports:
             by_project.reports.extend([convert(report) for report in reports])
@@ -62,19 +62,21 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
         logging.info('call EditReport')
         logging.info(request)
         report = self.db.reports.find_one({"_id": ObjectId(request.id)})
+        logging.info(report)
         if report is None:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
             return employee_report_pb2.Report()
 
+        logging.info(request.ListFields())
         for field, value in request.ListFields():
             if field.name == 'id':
                 continue
             if request.HasField(field.name):
-                setattr(report, field.name, getattr(request, field.name))
+                report[field.name] = getattr(request, field.name)
 
         self.db.reports.delete_one({ "_id": ObjectId(request.id) })
-        self.db.reports.insert_one(report).inserted_id
+        self.db.reports.insert_one(report)
         return convert(report)
 
     def DeleteReportById(self, request, context):
