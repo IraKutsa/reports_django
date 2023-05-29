@@ -3,6 +3,7 @@ from signal import signal, SIGTERM, SIGINT
 import grpc
 import logging
 
+from bson import ObjectId
 from google.protobuf.empty_pb2 import Empty
 from google.protobuf.json_format import MessageToDict, ParseDict
 from pymongo import MongoClient
@@ -10,51 +11,57 @@ from pymongo import MongoClient
 import employee_report_pb2_grpc, employee_report_pb2
 
 
+def convert(report):
+    report["id"] = str(report["_id"])
+    return ParseDict(report, employee_report_pb2.Report(), ignore_unknown_fields=True)
+
+
 class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServicer):
 
     def __init__(self):
-        # self.reports = []
-        # self.reports_by_user = {}
-        # self.reports_by_project = {}
         client = MongoClient('localhost', 27017)
         self.db = client.service_db
 
     def CreateReport(self, request, context):
         logging.info('call CreateReport')
         logging.info(request)
-        report = MessageToDict(request)
-        # report.id = len(self.reports) + 1
-        # self.reports.append(report)
-        # self._add_report_to_collections(report)
-        report["id"] = str(self.db.reports.insert_one(report).inserted_id)
-        return ParseDict(report, employee_report_pb2.Report(), ignore_unknown_fields=True)
+        report = MessageToDict(request, preserving_proto_field_name=True)
+        self.db.reports.insert_one(report)
+        return convert(report)
 
     def GetReportById(self, request, context):
-        report = self.db.reports.find_one({"_id": request.id})
+        logging.info('call GetReportById')
+        logging.info(request)
+        report = self.db.reports.find_one({"_id": ObjectId(request.id)})
         if report is not None:
-            return report
+            return convert(report)
         else:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
             return employee_report_pb2.Report()
 
     def GetReportsByUser(self, request, context):
-        reports = self.db.reports.find({"user": request.user})
+        logging.info('call GetReportsByUser')
+        logging.info(request)
+        reports = self.db.reports.find({"userId": request.user_id})
+        by_user = employee_report_pb2.ReportsByUser(user_id=request.user_id)
         if reports:
-            return employee_report_pb2.ReportsByUser(reports=reports)
-        else:
-            return employee_report_pb2.ReportsByUser()
+            by_user.reports.extend([convert(report) for report in reports])
+        return by_user
 
     def GetReportsByProject(self, request, context):
-        reports = self.db.reports.find({"project": request.project})
+        logging.info('call GetReportsByProject')
+        logging.info(request)
+        reports = self.db.reports.find({"projectId": request.project_id})
+        by_project = employee_report_pb2.ReportsByProject(project_id=request.project_id)
         if reports:
-            return employee_report_pb2.ReportsByProject(reports=reports)
-        else:
-            return employee_report_pb2.ReportsByProject()
+            by_project.reports.extend([convert(report) for report in reports])
+        return by_project
 
     def EditReport(self, request, context):
-        report = self.db.reports.find_one({"_id": request.id})
-
+        logging.info('call EditReport')
+        logging.info(request)
+        report = self.db.reports.find_one({"_id": ObjectId(request.id)})
         if report is None:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -66,22 +73,18 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
             if request.HasField(field.name):
                 setattr(report, field.name, getattr(request, field.name))
 
-        self.db.reports.delete_one({ "_id": request.id })
-        report.id = self.db.reports.insert_one(report).inserted_id
-        # self.reports[index] = report
-        # self._remove_repreportsort_from_collections(report)
-        # self._add_report_to_collections(report)
-        return report
+        self.db.reports.delete_one({ "_id": ObjectId(request.id) })
+        self.db.reports.insert_one(report).inserted_id
+        return convert(report)
 
     def DeleteReportById(self, request, context):
-        # index, report = self._find_report_by_id(request.id)
-        result = self.db.reports.delete_one({"_id": request.id})
-        if result.deleted_count > 0:
-            return Empty()
-        else:
+        logging.info('call DeleteReportById')
+        logging.info(request)
+        result = self.db.reports.delete_one({"_id": ObjectId(request.id)})
+        if result.deleted_count < 1:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            return Empty()
+        return Empty()
 
 
 def serve():

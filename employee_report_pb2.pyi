@@ -9,8 +9,8 @@ DESCRIPTOR: _descriptor.FileDescriptor
 class DeleteReportByIdRequest(_message.Message):
     __slots__ = ["id"]
     ID_FIELD_NUMBER: _ClassVar[int]
-    id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
 
 class EditReportRequest(_message.Message):
     __slots__ = ["creation_date", "id", "project_id", "report_date", "task_description", "task_name", "time_span_minutes"]
@@ -22,19 +22,19 @@ class EditReportRequest(_message.Message):
     TASK_NAME_FIELD_NUMBER: _ClassVar[int]
     TIME_SPAN_MINUTES_FIELD_NUMBER: _ClassVar[int]
     creation_date: str
-    id: int
+    id: str
     project_id: int
     report_date: str
     task_description: str
     task_name: str
     time_span_minutes: int
-    def __init__(self, id: _Optional[int] = ..., project_id: _Optional[int] = ..., creation_date: _Optional[str] = ..., report_date: _Optional[str] = ..., time_span_minutes: _Optional[int] = ..., task_name: _Optional[str] = ..., task_description: _Optional[str] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., project_id: _Optional[int] = ..., creation_date: _Optional[str] = ..., report_date: _Optional[str] = ..., time_span_minutes: _Optional[int] = ..., task_name: _Optional[str] = ..., task_description: _Optional[str] = ...) -> None: ...
 
 class GetReportByIdRequest(_message.Message):
     __slots__ = ["id"]
     ID_FIELD_NUMBER: _ClassVar[int]
-    id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
 
 class GetReportsByProjectRequest(_message.Message):
     __slots__ = ["project_id"]

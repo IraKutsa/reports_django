@@ -38,7 +38,7 @@ service EmployeeReportService {
 
 // Request/Response message definitions
 message GetReportByIdRequest {
-  int32 id = 1;
+  string id = 1;
 }
 
 message GetReportsByUserRequest {
@@ -50,7 +50,7 @@ message GetReportsByProjectRequest {
 }
 
 message EditReportRequest {
-  int32 id = 1;
+  string id = 1;
   optional int32 project_id = 2;
   optional string creation_date = 3;
   optional string report_date = 4;
@@ -60,5 +60,5 @@ message EditReportRequest {
 }
 
 message DeleteReportByIdRequest {
-  int32 id = 1;
+  string id = 1;
 }

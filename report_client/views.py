@@ -1,4 +1,7 @@
+import logging
+
 import grpc
+from django.http import Http404
 from google.protobuf.json_format import MessageToJson, ParseDict
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -21,31 +24,53 @@ class ReportsView(generics.CreateAPIView):
         return Response(json, status=status.HTTP_201_CREATED)
 
 
-class EditReportsView(APIView):
+class GetEditReportsView(APIView):
 
     def get(self, request, id):
-        pass
+        try:
+            request_by_id = employee_report_pb2.GetReportByIdRequest(id=id)
+            report = stub.GetReportById(request=request_by_id)
+            json = MessageToJson(report, preserving_proto_field_name=True)
+            return Response(json, status=status.HTTP_200_OK)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise Http404
 
     def put(self, request, id):
-        pass
+        try:
+            report = ParseDict(request.data, employee_report_pb2.EditReportRequest())
+            report.id = id
+            response = stub.EditReport(request=report)
+            json = MessageToJson(response, preserving_proto_field_name=True)
+            return Response(json, status=status.HTTP_201_CREATED)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise Http404
 
     def patch(self, request, id):
-        pass
+        return self.put(request,  id)
+
+    def delete(self, request, id):
+        try:
+            request_by_id = employee_report_pb2.DeleteReportByIdRequest(id=id)
+            stub.DeleteReportById(request=request_by_id)
+            return Response(status=status.HTTP_200_OK)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise Http404
 
 
 class UserReportsView(APIView):
     def get(self, request, id):
         request = employee_report_pb2.GetReportsByUserRequest(user_id=id)
         response = stub.GetReportsByUser(request=request)
-        # TODO: check response for empty set and return error instead of OK
         json = MessageToJson(response, preserving_proto_field_name=True)
         return Response(json, status=status.HTTP_200_OK)
 
 
 class ProjectsReportsView(APIView):
     def get(self, request, id):
-        report = ParseDict(request.data, employee_report_pb2.GetReportsByProjectRequest())
-        response = stub.GetReportsByProject(request=report)
-        # TODO: check response for empty set and return error instead of OK
+        request = ParseDict(request.data, employee_report_pb2.GetReportsByProjectRequest(project_id=id))
+        response = stub.GetReportsByProject(request=request)
         json = MessageToJson(response, preserving_proto_field_name=True)
         return Response(json, status=status.HTTP_200_OK)
