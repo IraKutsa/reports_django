@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from concurrent import futures
 from signal import signal, SIGTERM, SIGINT
 import grpc
@@ -6,56 +7,59 @@ import logging
 from bson import ObjectId
 from google.protobuf.empty_pb2 import Empty
 from google.protobuf.json_format import MessageToDict, ParseDict
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 
-import employee_report_pb2_grpc, employee_report_pb2
+from protocol_buffers import employee_report_pb2_grpc
 
 
-def convert(report):
+def convert(report, message):
     report["id"] = str(report["_id"])
-    return ParseDict(report, employee_report_pb2.Report(), ignore_unknown_fields=True)
+    return ParseDict(report, message, ignore_unknown_fields=True)
 
 
 class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServicer):
 
     def __init__(self):
-        client = MongoClient('localhost', 27017)
-        self.db = client.service_db
+        try:
+            client = MongoClient('localhost', 27017)
+            self.db = client.service_db
+        except errors.PyMongoError as e:
+            logging.error(str(e))
 
     def CreateReport(self, request, context):
         logging.info('call CreateReport')
         logging.info(request)
         report = MessageToDict(request, preserving_proto_field_name=True)
         self.db.reports.insert_one(report)
-        return convert(report)
+        return convert(report, employee_report_pb2_grpc.Report())
 
     def GetReportById(self, request, context):
         logging.info('call GetReportById')
         logging.info(request)
         report = self.db.reports.find_one({"_id": ObjectId(request.id)})
         if report is not None:
-            return convert(report)
+            return convert(report, employee_report_pb2_grpc.Report())
         else:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            return employee_report_pb2.Report()
+            return employee_report_pb2_grpc.Report()
 
     def GetReportsByUser(self, request, context):
         logging.info('call GetReportsByUser')
         logging.info(request)
         reports = self.db.reports.find({"user_id": request.user_id})
-        by_user = employee_report_pb2.ReportsByUser(user_id=request.user_id)
+        by_user = employee_report_pb2_grpc.ReportsByUser(user_id=request.user_id)
         if reports:
-            by_user.reports.extend([convert(report) for report in reports])
+            by_user.reports.extend([convert(report, employee_report_pb2_grpc.Report()) for report in reports])
         return by_user
 
     def GetReportsByProject(self, request, context):
         logging.info('call GetReportsByProject')
         logging.info(request)
         reports = self.db.reports.find({"project_id": request.project_id})
-        by_project = employee_report_pb2.ReportsByProject(project_id=request.project_id)
+        by_project = employee_report_pb2_grpc.ReportsByProject(project_id=request.project_id)
         if reports:
-            by_project.reports.extend([convert(report) for report in reports])
+            by_project.reports.extend([convert(report, employee_report_pb2_grpc.Report()) for report in reports])
         return by_project
 
     def EditReport(self, request, context):
@@ -66,7 +70,7 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
         if report is None:
             context.set_details('Report not found')
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            return employee_report_pb2.Report()
+            return employee_report_pb2_grpc.Report()
 
         logging.info(request.ListFields())
         for field, value in request.ListFields():
@@ -77,7 +81,7 @@ class EmployeeReportService(employee_report_pb2_grpc.EmployeeReportServiceServic
 
         self.db.reports.delete_one({ "_id": ObjectId(request.id) })
         self.db.reports.insert_one(report)
-        return convert(report)
+        return convert(report, employee_report_pb2_grpc.Report())
 
     def DeleteReportById(self, request, context):
         logging.info('call DeleteReportById')

@@ -1,5 +1,3 @@
-import logging
-
 import grpc
 from django.http import Http404
 from google.protobuf.json_format import MessageToJson, ParseDict
@@ -7,8 +5,8 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import employee_report_pb2
-import employee_report_pb2_grpc
+from protocol_buffers import employee_report_pb2
+from protocol_buffers import employee_report_pb2_grpc
 
 # Establish a gRPC channel
 channel = grpc.insecure_channel('[::]:50051', options=(('grpc.enable_http_proxy', 0),))
@@ -18,10 +16,13 @@ stub = employee_report_pb2_grpc.EmployeeReportServiceStub(channel)
 # Create your views here.
 class ReportsView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
-        report = ParseDict(request.data, employee_report_pb2.Report())
-        response = stub.CreateReport(request=report)
-        json = MessageToJson(response, preserving_proto_field_name=True)
-        return Response(json, status=status.HTTP_201_CREATED)
+        try:
+            report = ParseDict(request.data, employee_report_pb2.Report())
+            response = stub.CreateReport(request=report)
+            json = MessageToJson(response, preserving_proto_field_name=True)
+            return Response(json, status=status.HTTP_201_CREATED)
+        except grpc.RpcError as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GetEditReportsView(APIView):
@@ -62,15 +63,23 @@ class GetEditReportsView(APIView):
 
 class UserReportsView(APIView):
     def get(self, request, id):
-        request = employee_report_pb2.GetReportsByUserRequest(user_id=id)
-        response = stub.GetReportsByUser(request=request)
-        json = MessageToJson(response, preserving_proto_field_name=True)
-        return Response(json, status=status.HTTP_200_OK)
+        try:
+            request = employee_report_pb2.GetReportsByUserRequest(user_id=id)
+            response = stub.GetReportsByUser(request=request)
+            json = MessageToJson(response, preserving_proto_field_name=True)
+            return Response(json, status=status.HTTP_200_OK)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise Http404
 
 
 class ProjectsReportsView(APIView):
     def get(self, request, id):
-        request = ParseDict(request.data, employee_report_pb2.GetReportsByProjectRequest(project_id=id))
-        response = stub.GetReportsByProject(request=request)
-        json = MessageToJson(response, preserving_proto_field_name=True)
-        return Response(json, status=status.HTTP_200_OK)
+        try:
+            request = ParseDict(request.data, employee_report_pb2.GetReportsByProjectRequest(project_id=id))
+            response = stub.GetReportsByProject(request=request)
+            json = MessageToJson(response, preserving_proto_field_name=True)
+            return Response(json, status=status.HTTP_200_OK)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise Http404
