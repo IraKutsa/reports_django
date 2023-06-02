@@ -17,12 +17,13 @@ stub = employee_report_pb2_grpc.EmployeeReportServiceStub(channel)
 class ReportsView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         try:
-            report = ParseDict(request.data, employee_report_pb2.Report())
+            grpc_report = employee_report_pb2.Report()
+            report = ParseDict(request.data, grpc_report)
             response = stub.CreateReport(request=report)
             json = MessageToJson(response, preserving_proto_field_name=True)
             return Response(json, status=status.HTTP_201_CREATED)
         except grpc.RpcError as e:
-            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetEditReportsView(APIView):
