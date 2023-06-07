@@ -4,12 +4,14 @@ from functools import partial
 from signal import signal, SIGTERM, SIGINT
 import grpc
 import logging
+import sys
 
 from bson import ObjectId
 from google.protobuf.empty_pb2 import Empty
 from google.protobuf.json_format import MessageToDict, ParseDict
 from pymongo import MongoClient, errors
 
+sys.path.append('..')
 from protocol_buffers import employee_report_pb2_grpc, employee_report_pb2
 
 
